@@ -9,7 +9,7 @@ import pandas as pd
 import resolve
 import learning
 
-# mongodb へのアクセスを確立
+#mongodb へのアクセスを確立
 client = pymongo.MongoClient('localhost', 27017)
 
 # データベースを作成 (名前: my_database)
@@ -25,6 +25,9 @@ df = pd.DataFrame.from_dict(list(co.find({},{
     'action' : True,
     'score' : True
 }))).astype(object)
+
+if len(df) <= 1:
+    df = pd.DataFrame([['0', 0, 0]] ,columns=["action", "observation", "score"])
 
 class Main():
 
@@ -264,10 +267,10 @@ class Main():
                 print('解けない')
 
     def auto_button_onclick2(self):
-        observations = []
-        self.learning(observations, 0)
+        observation = []
+        self.learning(observation, 0)
 
-    def learning(self, observations, episode):
+    def learning(self, observation, episode):
         # 10000エピソードで学習する
         learning_flag = False
         #最初に爆弾をセットしてパネルを開く
@@ -282,11 +285,10 @@ class Main():
                     around_list = self.search_around(frame.num)
                     for i in around_list :
                         if  self.frame_list[i].cget('relief') == 'raised' :
-                            observation = self.env.reset(self.frame_list, i)
-                            observations.append(observation)
+                            observation = self.env.reset(self.frame_list)
         else :
             # ε-グリーディ法で行動を選択
-            action = self.env.get_action(self.env, self.q_table, observations, episode)
+            action = self.env.get_action(self.env, self.q_table, observation, episode)
             #パネルが開けるか判定
             moved = False
             if self.frame_list[action].cget('relief') == "raised" :
@@ -318,7 +320,7 @@ class Main():
                 learning_flag = True
             
         if learning_flag :
-            self.root.after(200, self.learning, observations, episode)
+            self.root.after(200, self.learning, observation, episode)
         else:
             print("学習終了")
 
@@ -461,6 +463,7 @@ if __name__ == "__main__":
     #Mongoに保存できる形式にする
     objs = []
     for i in range(len(main.q_table)):
+        print(main.q_table)
         _observation = str(main.q_table['observation'].values[i])
         _action = int(main.q_table['action'].values[i])
         _score = int(main.q_table['score'].values[i])
@@ -472,10 +475,10 @@ if __name__ == "__main__":
         objs.append(obj)
 
     #コレクション初期化
-    #co.drop()
+    co.drop()
 
     # なんか適当に保存
-    #co.insert_many(objs)
+    co.insert_many(objs)
     print("完了")
 
 

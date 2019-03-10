@@ -81,6 +81,7 @@ class MyEnv(gym.Env):
             return False
 
     def _observe(self, frame_list):
+        observation = ""
         for frame in frame_list:
             if frame.cget('relief') == "ridge":
                 if frame.cget('bg') == "yellow":
