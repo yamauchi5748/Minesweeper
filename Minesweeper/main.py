@@ -463,7 +463,6 @@ if __name__ == "__main__":
     #Mongoに保存できる形式にする
     objs = []
     for i in range(len(main.q_table)):
-        print(main.q_table)
         _observation = str(main.q_table['observation'].values[i])
         _action = int(main.q_table['action'].values[i])
         _score = int(main.q_table['score'].values[i])
