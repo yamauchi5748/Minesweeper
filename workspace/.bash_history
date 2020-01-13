@@ -99,3 +99,5 @@ apt-get update
 apt-get install fonts-noto-cjk fonts-noto-hinted
 python main.py
 exit
+python main.py
+exit

@@ -12,7 +12,19 @@ import learning
 #mongodb へのアクセスを確立
 client = pymongo.MongoClient('mongo', 27017)
 
-df = "";
+# データベースを作成 (名前: my_database)
+db = client["Minesweeper_database"]
+
+# コレクションを作成 (名前: my_collection)
+co = db["Minesweeper_data_001"]
+
+#サンプルDFの作成
+df = pd.DataFrame.from_dict(list(co.find({},{
+    '_id' : False,
+    'observation' : True,
+    'action' : True,
+    'score' : True
+}))).astype(object)
 
 if len(df) <= 1:
     df = pd.DataFrame([['0', 0, 0]] ,columns=["action", "observation", "score"])
