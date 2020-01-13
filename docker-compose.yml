@@ -1,0 +1,23 @@
+version: '3'
+services:
+  
+  python3:
+    build: ./Docker/python3
+    restart: ${RESTART}
+    working_dir: ${WORKING_DIR}
+    tty: true
+    environment:
+      DISPLAY: 10.0.75.1:0.0
+    volumes:
+      - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}
+    ports:
+      - '8081:8081'
+    depends_on: 
+      - mongo
+
+  mongo:
+    build: ./Docker/mongo
+    restart: ${RESTART}
+    tty: true
+    ports: 
+      - ${MONGO_PORT_HOST}:${MONGO_PORT_CONTAINER}

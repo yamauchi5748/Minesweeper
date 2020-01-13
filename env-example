@@ -1,0 +1,21 @@
+###########################################################
+###################### General Setup ######################
+###########################################################
+
+### Paths #################################################
+
+# Point to the path of your applications code on your host
+APP_CODE_PATH_HOST=./workspace
+APP_CODE_PATH_CONTAINER=/root
+
+# Mongo settings
+MONGO_PATH_HOST=./data
+MONGO_PATH_CONTAINER=/data/
+MONGO_PORT_HOST=27017
+MONGO_PORT_CONTAINER=27017
+
+# restart command default 'always'
+RESTART=always
+
+# working_dir settings
+WORKING_DIR=/root/
