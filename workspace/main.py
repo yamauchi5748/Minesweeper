@@ -27,7 +27,7 @@ df = pd.DataFrame.from_dict(list(co.find({},{
 }))).astype(object)
 
 if len(df) <= 1:
-    df = pd.DataFrame([['0', 0, 0]] ,columns=["action", "observation", "score"])
+    df = pd.DataFrame([['0', 0, 0]] ,columns=["observation", "action", "score"])
 
 class Main():
 
@@ -271,7 +271,7 @@ class Main():
         self.learning(observation, 0)
 
     def learning(self, observation, episode):
-        # 10000エピソードで学習する
+        # 100エピソードで学習する
         learning_flag = False
         #最初に爆弾をセットしてパネルを開く
         if self.start_flag :
@@ -301,7 +301,7 @@ class Main():
             # Qテーブルの更新
             self.q_table = self.env.update_q_table(self.q_table, action, observation, next_observation, reward, episode)
             print("テーブル数", len(self.q_table), "action", action, "エピソード", episode)
-            print()
+            print(action)
             observation = next_observation
 
             if done:
@@ -310,11 +310,8 @@ class Main():
                 self.reset_button_onclick()
                 self.env.steps = 0
 
-                if episode%500 == 0 :    
-                    self.q_table.to_csv('C:\python\Minesweeper\data001.csv', header=True, index=False)
-
-                #10000回学習したら終了
-                if episode < 10000 :
+                #100回学習したら終了
+                if episode < 100 :
                     learning_flag = True
             else :
                 learning_flag = True

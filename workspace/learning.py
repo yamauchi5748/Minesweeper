@@ -130,9 +130,8 @@ class MyEnv(gym.Env):
             _q_table.loc[(_q_table['observation'] == _observation) & (_q_table['action'] == _action), 'score'] = q_value + alpha * (_reward + gamma * next_max_q_value - q_value)
         else :
             #　行動価値観数に新しいデータをセット
-            new_data = pd.Series([_action, _observation, alpha*_reward], index=_q_table.columns, name=len(_q_table))
+            new_data = pd.Series([_observation, _action, alpha*_reward], index=_q_table.columns, name=len(_q_table))
             _q_table = _q_table.append(new_data)
-        #print(_q_table)
         return _q_table
 
     #グリーディ法
