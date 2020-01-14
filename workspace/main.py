@@ -16,6 +16,7 @@ client = pymongo.MongoClient('mongo', 27017)
 db = client["Minesweeper_database"]
 
 # コレクションを作成 (名前: my_collection)
+#co = db["Minesweeper_data_001"] # 5 * 5
 co = db["Minesweeper_data_001"]
 
 #サンプルDFの作成
@@ -32,6 +33,14 @@ if len(df) <= 1:
 class Main():
 
     def __init__(self):
+        # マス目、ボムの数
+        self.width = 5
+        self.height = 5
+        self.normal_bomb = 7
+        self.biginer_bomb = 10
+        self.miner_bomb = 15
+        self.expert_bomb = 30
+
         ###学習環境を登録
         register(
             id='Myenv-v0',
@@ -77,7 +86,7 @@ class Main():
         self.button_font_size = 13
         self.stop_timer = False
         self.timer = 0
-        self.bomb_num = 50
+        self.bomb_num = self.normal_bomb
         self.bomb_flag_num = 0
         self.clear_math_num = 0
         self.start_flag = True
@@ -108,10 +117,8 @@ class Main():
         ####マス目の作成####
         i = 0
         self.frame_list = []
-        self.width = 20
-        self.height = 15
-        self.frame_width = 20
-        self.frame_height = 20
+        self.frame_width = 80
+        self.frame_height = 80
 
         for x in range(self.height):
             for y in range(self.width):
@@ -124,7 +131,7 @@ class Main():
                 self.frame_list.append(frame)
                 frame.grid(row=x, column=y)
                 i += 1
-        self.resol = resolve.resoleve(self.game_frame, self.height, self.frame_height, self.frame_width, self.width, self.frame_list, self.bomb_num)
+        self.resol = resolve.resoleve(self.game_frame, self.height, self.frame_height, self.width, self.frame_width, self.frame_list, self.bomb_num)
         
     def left_click(self,event):
         if (event.widget.cget('relief') == "ridge") :
@@ -216,8 +223,7 @@ class Main():
                 frame.grid(row=x, column=y)
                 i += 1
         self.timer_label.configure(text = "00:00")
-        self.resol = resolve.resoleve(self.game_frame, self.height, self.frame_height, self.frame_width, self.width, self.frame_list, self.bomb_num)
-    
+        self.resol = resolve.resoleve(self.game_frame, self.height, self.frame_height, self.width, self.frame_width, self.frame_list, self.bomb_num)
 
     def auto_button_onclick(self):
         game_flag = False
@@ -271,7 +277,7 @@ class Main():
         self.learning(observation, 0)
 
     def learning(self, observation, episode):
-        # 100エピソードで学習する
+        # 学習する
         learning_flag = False
         #最初に爆弾をセットしてパネルを開く
         if self.start_flag :
@@ -288,20 +294,17 @@ class Main():
                             observation = self.env.reset(self.frame_list)
         else :
             # ε-グリーディ法で行動を選択
-            action = self.env.get_action(self.env, self.q_table, observation, episode)
-            #パネルが開けるか判定
-            moved = False
-            if self.frame_list[action].cget('relief') == "raised" :
-                moved = True
+            action = self.env.get_action(self.env, self.q_table, observation, episode, self.frame_list)
             #パネルオープン
             self.resol.openPanel(self.frame_list[action])
+            #　クリア判定
+            is_clear = self.resol.is_clear()
             # 観測結果・報酬・ゲーム終了FLG・詳細情報を取得
-            next_observation, reward, done, _ = self.env.step(self.frame_list, action, moved)
+            next_observation, reward, done, _ = self.env.step(self.frame_list, action, is_clear)
 
             # Qテーブルの更新
             self.q_table = self.env.update_q_table(self.q_table, action, observation, next_observation, reward, episode)
-            print("テーブル数", len(self.q_table), "action", action, "エピソード", episode)
-            print(action)
+            print("テーブル数", len(self.q_table), "action", action, "報酬", reward, "エピソード", episode)
             observation = next_observation
 
             if done:
@@ -310,14 +313,14 @@ class Main():
                 self.reset_button_onclick()
                 self.env.steps = 0
 
-                #100回学習したら終了
-                if episode < 100 :
+                #100000000回学習したら終了
+                if episode < 100000000 :
                     learning_flag = True
             else :
                 learning_flag = True
             
         if learning_flag :
-            self.root.after(200, self.learning, observation, episode)
+            self.root.after(0, self.learning, observation, episode)
         else:
             print("学習終了")
 
@@ -426,22 +429,22 @@ class Main():
     
     def game_0level_set(self):
         self.reset_button_onclick()
-        self.bomb_num = 20
+        self.bomb_num = self.biginer_bomb
         self.exist_bomb_count_label.configure(text = '残り' + str(self.bomb_num))
 
     def game_1level_set(self):
         self.reset_button_onclick()
-        self.bomb_num = 35
+        self.bomb_num = self.miner_bomb
         self.exist_bomb_count_label.configure(text = '残り' + str(self.bomb_num))
 
     def game_2level_set(self):
         self.reset_button_onclick()
-        self.bomb_num = 50
+        self.bomb_num = self.normal_bomb
         self.exist_bomb_count_label.configure(text = '残り' + str(self.bomb_num))
 
     def game_3level_set(self):
         self.reset_button_onclick()
-        self.bomb_num = 70
+        self.bomb_num = self.expert_bomb
         self.exist_bomb_count_label.configure(text = '残り' + str(self.bomb_num))
 
     def common_mode(self):
@@ -462,7 +465,7 @@ if __name__ == "__main__":
     for i in range(len(main.q_table)):
         _observation = str(main.q_table['observation'].values[i])
         _action = int(main.q_table['action'].values[i])
-        _score = int(main.q_table['score'].values[i])
+        _score = float(main.q_table['score'].values[i])
         obj = {
             'observation' : _observation,
             'action' : _action,

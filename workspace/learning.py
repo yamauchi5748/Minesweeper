@@ -20,8 +20,8 @@ class MyEnv(gym.Env):
 
     def __init__(self):
         super().__init__()
-        self.height = 20
-        self.width = 15
+        self.width = 5
+        self.height = 5
 
         self.action_space = gym.spaces.Discrete(self.height*self.width)
         self.observation_space = gym.spaces.Box(
@@ -36,13 +36,13 @@ class MyEnv(gym.Env):
         self.steps = 0
         return self._observe(frame_list)
 
-    def _step(self, frame_list, action, moved):
+    def _step(self, frame_list, action, is_clear):
         # 1ステップ進める処理を記述。戻り値は observation, reward, done(ゲーム終了したか), info(追加の情報の辞書)
 
         self.steps += 1
         observation = self._observe(frame_list)
-        reward = self._get_reward(frame_list[action], moved)
-        self.done = self._is_done(frame_list[action])
+        reward = self._get_reward(frame_list[action], is_clear)
+        self.done = self._is_done(frame_list[action], is_clear)
         return observation, reward, self.done, {}
 
     def _close(self):
@@ -51,18 +51,18 @@ class MyEnv(gym.Env):
     def _seed(self, seed=None):
         pass
 
-    def _get_reward(self, frame, moved):
+    def _get_reward(self, frame, is_clear):
         # 報酬を返す。報酬の与え方が難しい
-        # - 1ステップごとに-1ポイント(できるだけ短いステップ)
-        # とした
-        # 爆弾を開いたら-10ポイント
-        # 開けないところを選択すると-10000
-        if moved and not frame.is_bomb:
-            return -1
-        elif not moved :
-            return -10000
+        # クリアしたら100ポイント
+        # 1ステップごとに-10ポイント(できるだけ短いステップ)
+        # 爆弾を開いたら-1000ポイント
+        if is_clear:
+            print("クリア！！")
+            return 100
+        elif frame.is_bomb:
+            return -1000
         else:
-            return -10
+            return 10
 
     def _is_pushable(self, frame_list, action):
         # パネルを開けるか
@@ -71,11 +71,9 @@ class MyEnv(gym.Env):
             and frame_list[action].cget('relief') == 'raised'
         )
 
-    def _is_done(self, frame):
-        # 今回は最大で self.MAX_STEPS までとした
-        if frame.is_bomb :
-            return True
-        elif self.steps > self.MAX_STEPS:
+    def _is_done(self, frame, is_clear):
+        # 爆弾パネルを開く　もしくは　クリア
+        if frame.is_bomb or is_clear :
             return True
         else:
             return False
@@ -116,12 +114,12 @@ class MyEnv(gym.Env):
         gamma = 0.99 # 時間割引き率
 
         #_q_tableにデータが存在するか
-        if len(_q_table[_q_table['observation'] == _observation]) > 0 :
+        if len(_q_table[_q_table['observation'] == _observation][_q_table['action'] == _action]) > 0 :
             # 行動後の状態で得られる最大行動価値 Q(s',a')
             next_max_q_value = 0
             if len(_q_table[_q_table['observation'] == _next_observation]) > 0 :
-                next_max_q_action = max(_q_table[_q_table['observation'] == _next_observation]['action'].values)
-                next_max_q_value = _q_table[(_q_table['observation'] == _next_observation) & (_q_table['action'] == next_max_q_action)]['score']
+                next_max_q_value = max(_q_table[_q_table['observation'] == _next_observation]['score'].values)
+                next_max_q_action = _q_table[(_q_table['observation'] == _next_observation) & (_q_table['score'] == next_max_q_value)]['action']
 
             # 行動前の状態の行動価値 Q(s,a)
             q_value = _q_table[(_q_table['observation'] == _observation) & (_q_table['action'] == _action)]['score']
@@ -129,26 +127,35 @@ class MyEnv(gym.Env):
             # 行動価値関数の更新
             _q_table.loc[(_q_table['observation'] == _observation) & (_q_table['action'] == _action), 'score'] = q_value + alpha * (_reward + gamma * next_max_q_value - q_value)
         else :
-            #　行動価値観数に新しいデータをセット
+            #　行動価値関数に新しいデータをセット
             new_data = pd.Series([_observation, _action, alpha*_reward], index=_q_table.columns, name=len(_q_table))
             _q_table = _q_table.append(new_data)
         return _q_table
 
     #グリーディ法
-    def get_action(self, _env, _q_table, _observation, _episode):
+    def get_action(self, _env, _q_table, _observation, _episode, _frame_list):
         epsilon = 0.002
         _action = -1
+
+        # 行動可能箇所を算出
+        action_list = []
+        for i in range(self.width*self.height) :
+            if _frame_list[i].cget('relief') == "raised" :
+                action_list.append(i)
+
+        # ランダムでないかつ、盤面が既出の場合
         if np.random.uniform(0, 1) > epsilon and len(_q_table[_q_table['observation'] == _observation]) > 0:
-            if len(_q_table[_q_table['observation'] == _observation]) < 300 :
-                action_list = [i for i in range(self.width*self.height)]
+
+            # 既出の盤面に対して行動可能な全行動をためしていないか
+            if len(_q_table[_q_table['observation'] == _observation]) < len(action_list) :
                 remove_list = _q_table[_q_table['observation'] == _observation]['action'].values
-                for i in remove_list :
+                for i in remove_list:
                     action_list.remove(i)
                 _action = np.random.choice(action_list)
             else :
                 _max_score = max(_q_table[_q_table['observation'] == _observation]['score'].values)
                 _action = max(_q_table[(_q_table['observation'] == _observation) & (_q_table['score'] == _max_score)]['action'].values)
         else:
-            _action = np.random.choice(range(self.height*self.width))
+            _action = np.random.choice(action_list)
         return int(_action)
             

@@ -19,5 +19,7 @@ services:
     build: ./Docker/mongo
     restart: ${RESTART}
     tty: true
+    volumes:
+      - ${MONGO_PATH_HOST}:${MONGO_PATH_CONTAINER}
     ports: 
       - ${MONGO_PORT_HOST}:${MONGO_PORT_CONTAINER}

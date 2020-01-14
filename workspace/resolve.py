@@ -111,11 +111,11 @@ class resoleve():
         elif frame.bomb_count == 5:
             bomb_count_label.configure(fg = 'red4')
         elif frame.bomb_count == 6:
-            bomb_count_label.configure(fg = 'Orange Red4')
+            bomb_count_label.configure(fg = 'DarkOrange1')
         elif frame.bomb_count == 7:
-            bomb_count_label.configure(fg = 'Deep Pink4')
+            bomb_count_label.configure(fg = 'OrangeRed3')
         elif frame.bomb_count == 8:
-            bomb_count_label.configure(fg = 'Deep Pink4')
+            bomb_count_label.configure(fg = 'OrangeRed4')
         bomb_count_label.place(width = self.frame_width, height = self.frame_height)
     
 
